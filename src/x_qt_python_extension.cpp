@@ -110,17 +110,6 @@ void launch(const py::list args_list)
                              xpyt::make_python_debugger);
 
 
-
-        // xeus::xkernel kernel(config,
-        //                      xeus::get_user_name(),
-        //                      std::move(context),
-        //                      std::move(interpreter),
-        //                      xeus::make_xserver_shell_main,
-        //                      std::move(hist),
-        //                      xeus::make_console_logger(xeus::xlogger::msg_type,
-        //                                                xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
-        //                      xpyt::make_python_debugger);
-
         std::clog <<
             "Starting xeus-python kernel...\n\n"
             "If you want to connect to this kernel from an other client, you can use"

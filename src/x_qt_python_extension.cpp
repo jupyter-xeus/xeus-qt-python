@@ -37,7 +37,28 @@
 namespace py = pybind11;
 
 
-void launch(const py::list args_list)
+class  xpyqt_interpreter : public xpyt::interpreter
+{
+    public:
+        xpyqt_interpreter()
+        : xpyt::interpreter()
+    {
+        this->m_release_gil_at_startup = false;
+    }
+};
+
+class  xpyqt_raw_interpreter : public xpyt::raw_interpreter
+{
+    public:
+        xpyqt_raw_interpreter()
+        : xpyt::raw_interpreter()
+    {
+        this->m_release_gil_at_startup = false;
+    }
+};
+
+
+auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
 {
     // Extract cli args from Python object
     int argc = args_list.size();
@@ -48,12 +69,7 @@ void launch(const py::list args_list)
         argv[i] = (char*)PyUnicode_AsUTF8(args_list[i].ptr());
     }
 
-    if (xeus::should_print_version(argc, argv.data()))
-    {
-        std::clog << "xpython " << XPYT_VERSION << std::endl;
-        return;
-    }
-
+   
     // Registering SIGSEGV handler
 #ifdef __GNUC__
     std::clog << "registering handler for SIGSEGV" << std::endl;
@@ -76,11 +92,11 @@ void launch(const py::list args_list)
     interpreter_ptr interpreter;
     if (raw_mode)
     {
-        interpreter = interpreter_ptr(new xpyt::raw_interpreter());
+        interpreter = interpreter_ptr(new xpyqt_raw_interpreter());
     }
     else
     {
-        interpreter = interpreter_ptr(new xpyt::interpreter());
+        interpreter = interpreter_ptr(new xpyqt_interpreter());
     }
 
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
@@ -99,7 +115,7 @@ void launch(const py::list args_list)
 
 
 
-        xeus::xkernel kernel(config,
+        auto kernel = std::make_unique<xeus::xkernel>(config,
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
@@ -110,17 +126,20 @@ void launch(const py::list args_list)
                              xpyt::make_python_debugger);
 
 
+
+
         std::clog <<
             "Starting xeus-python kernel...\n\n"
             "If you want to connect to this kernel from an other client, you can use"
             " the " + connection_filename + " file."
             << std::endl;
 
-        kernel.start();
+
+        return std::move(kernel);
     }
     else
     {
-        xeus::xkernel kernel(xeus::get_user_name(),
+        auto kernel = std::make_unique<xeus::xkernel>(xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
                              make_xq_server,
@@ -128,7 +147,7 @@ void launch(const py::list args_list)
                              nullptr,
                              xpyt::make_python_debugger);
 
-        const auto& config = kernel.get_config();
+        const auto& config = kernel->get_config();
         std::clog <<
             "Starting xeus-python kernel...\n\n"
             "If you want to connect to this kernel from an other client, just copy"
@@ -147,13 +166,17 @@ void launch(const py::list args_list)
             "}\n```"
             << std::endl;
 
-        kernel.start();
+        return std::move(kernel);
     }
 }
 
 PYBIND11_MODULE(xqtpython, m)
 {
+    py::class_<xeus::xkernel>(m, "xkernel")
+        .def(py::init(&kernel_factory))
+        .def("start", &xeus::xkernel::start)
+    ;
+
     m.doc() = "Xeus-qt-python kernel launcher";
-    m.def("launch", launch, py::arg("args_list"), "Launch the Jupyter kernel");
 }
 #include "xeus-python/xdebugger.hpp"

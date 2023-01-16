@@ -1,7 +1,7 @@
 {
-  "display_name": "Python 3.10 (XPython Raw)",
+  "display_name": "Python 3.11 (XPython Raw)",
   "argv": [
-      "/home/derthorsten/micromamba/envs/xeusflare/bin/xpython",
+      "/Users/thorstenbeier/micromamba/envs/xeus/bin/xpython",
       "-f",
       "{connection_file}",
       "--raw"

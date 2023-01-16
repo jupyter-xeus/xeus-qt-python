@@ -151,9 +151,9 @@ void launch(const py::list args_list)
     }
 }
 
-PYBIND11_MODULE(xpython_extension, m)
+PYBIND11_MODULE(xqtpython, m)
 {
-    m.doc() = "Xeus-python kernel launcher";
+    m.doc() = "Xeus-qt-python kernel launcher";
     m.def("launch", launch, py::arg("args_list"), "Launch the Jupyter kernel");
 }
 #include "xeus-python/xdebugger.hpp"

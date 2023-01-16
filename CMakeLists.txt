@@ -73,9 +73,10 @@ OPTION(XQTPY_DOWNLOAD_GTEST "build gtest from downloaded sources" OFF)
 # ============
 
 set(xtl_REQUIRED_VERSION 0.7.0)
-set(xeus_REQUIRED_VERSION 2.0.0)
+set(xeus_REQUIRED_VERSION 3.0.3)
+set(xeus_zmq_REQUIRED_VERSION 1.0.2)
 set(xq_REQUIRED_VERSION 0.0.1)
-set(xeus_python_REQUIRED_VERSION 0.14.3)
+set(xeus_python_REQUIRED_VERSION 0.15.2)
 
 set(pybind11_REQUIRED_VERSION 2.6.1)
 set(pybind11_json_REQUIRED_VERSION 0.2.8)
@@ -87,6 +88,12 @@ if (NOT TARGET xtl)
 endif ()
 if (NOT TARGET xeus AND NOT TARGET xeus-static)
     find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
+endif ()
+if (NOT TARGET xeus-zmq AND NOT TARGET xeus-zmq-static)
+    find_package(xeus-zmq ${xeus_zmq_REQUIRED_VERSION} REQUIRED)
+endif ()
+if (NOT TARGET xeus-python AND NOT TARGET xeus-python-static)
+    find_package(xeus-python ${xeus_python_REQUIRED_VERSION} REQUIRED)
 endif ()
 if (NOT TARGET xq AND NOT TARGET xeus-qt-static)
     find_package(xq ${xq_REQUIRED_VERSION} REQUIRED)
@@ -176,8 +183,8 @@ set(XEUS_PYTHON_HEADERS
 
 
 
-pybind11_add_module(xpython_extension ${XEUS_QT_PYTHON_EXTENSION_SRC})
+pybind11_add_module(xqtpython ${XEUS_QT_PYTHON_EXTENSION_SRC})
 
-xqtpy_set_common_options(xpython_extension)
-xqtpy_set_kernel_options(xpython_extension)
-xqtpy_target_link_libraries(xpython_extension)
+xqtpy_set_common_options(xqtpython)
+xqtpy_set_kernel_options(xqtpython)
+xqtpy_target_link_libraries(xqtpython)

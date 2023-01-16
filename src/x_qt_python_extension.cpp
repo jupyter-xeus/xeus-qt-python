@@ -102,79 +102,41 @@ auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
     history_manager_ptr hist = xeus::make_in_memory_history_manager();
 
-#ifdef XEUS_PYTHON_PYPI_WARNING
-    std::clog <<
-        "WARNING: this instance of xeus-python has been installed from a PyPI wheel.\n"
-        "We recommend using a general-purpose package manager instead, such as Conda / Mamba.\n"
-        << std::endl;
-#endif
-
-    if (!connection_filename.empty())
-    {
-        xeus::xconfiguration config = xeus::load_configuration(connection_filename);
 
 
 
-        auto kernel = std::make_unique<xeus::xkernel>(config,
-                             xeus::get_user_name(),
-                             std::move(context),
-                             std::move(interpreter),
-                             make_xq_server,
-                             std::move(hist),
-                             xeus::make_console_logger(xeus::xlogger::msg_type,
-                                                       xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
-                             xpyt::make_python_debugger);
+    auto kernel = std::make_unique<xeus::xkernel>(xeus::get_user_name(),
+                         std::move(context),
+                         std::move(interpreter),
+                         make_xq_server,
+                         std::move(hist),
+                         nullptr,
+                         xpyt::make_python_debugger);
 
+    const auto& config = kernel->get_config();
+    return std::move(kernel);
 
-
-
-        std::clog <<
-            "Starting xeus-python kernel...\n\n"
-            "If you want to connect to this kernel from an other client, you can use"
-            " the " + connection_filename + " file."
-            << std::endl;
-
-
-        return std::move(kernel);
-    }
-    else
-    {
-        auto kernel = std::make_unique<xeus::xkernel>(xeus::get_user_name(),
-                             std::move(context),
-                             std::move(interpreter),
-                             make_xq_server,
-                             std::move(hist),
-                             nullptr,
-                             xpyt::make_python_debugger);
-
-        const auto& config = kernel->get_config();
-        std::clog <<
-            "Starting xeus-python kernel...\n\n"
-            "If you want to connect to this kernel from an other client, just copy"
-            " and paste the following content inside of a `kernel.json` file. And then run for example:\n\n"
-            "# jupyter console --existing kernel.json\n\n"
-            "kernel.json\n```\n{\n"
-            "    \"transport\": \"" + config.m_transport + "\",\n"
-            "    \"ip\": \"" + config.m_ip + "\",\n"
-            "    \"control_port\": " + config.m_control_port + ",\n"
-            "    \"shell_port\": " + config.m_shell_port + ",\n"
-            "    \"stdin_port\": " + config.m_stdin_port + ",\n"
-            "    \"iopub_port\": " + config.m_iopub_port + ",\n"
-            "    \"hb_port\": " + config.m_hb_port + ",\n"
-            "    \"signature_scheme\": \"" + config.m_signature_scheme + "\",\n"
-            "    \"key\": \"" + config.m_key + "\"\n"
-            "}\n```"
-            << std::endl;
-
-        return std::move(kernel);
-    }
 }
 
 PYBIND11_MODULE(xqtpython, m)
 {
     py::class_<xeus::xkernel>(m, "xkernel")
         .def(py::init(&kernel_factory))
-        .def("start", &xeus::xkernel::start)
+        .def("start", [](xeus::xkernel & kernel)->py::dict{
+            kernel.start();
+            auto config_dict = py::dict();
+            const auto & config = kernel.get_config(); 
+            config_dict["transport"] = config.m_transport;
+            config_dict["ip"] = config.m_ip;
+            config_dict["control_port"] = config.m_control_port;
+            config_dict["shell_port"] = config.m_shell_port;
+            config_dict["stdin_port"] = config.m_stdin_port;
+            config_dict["iopub_port"] = config.m_iopub_port;
+            config_dict["hb_port"] = config.m_hb_port;
+            config_dict["signature_scheme"] = config.m_signature_scheme;
+            config_dict["key"] = config.m_key;
+            return config_dict;
+        })
     ;
 
     m.doc() = "Xeus-qt-python kernel launcher";

@@ -40,8 +40,8 @@ namespace py = pybind11;
 class  xpyqt_interpreter : public xpyt::interpreter
 {
     public:
-        xpyqt_interpreter()
-        : xpyt::interpreter()
+        xpyqt_interpreter(bool redirect_output_enabled, bool redirect_display_enabled )
+        : xpyt::interpreter(redirect_output_enabled, redirect_display_enabled)
     {
         this->m_release_gil_at_startup = false;
     }
@@ -58,16 +58,9 @@ class  xpyqt_raw_interpreter : public xpyt::raw_interpreter
 };
 
 
-auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
+auto kernel_factory(bool redirect_output_enabled, bool redirect_display_enabled, bool raw_kernel) -> std::unique_ptr<xeus::xkernel>
 {
-    // Extract cli args from Python object
-    int argc = args_list.size();
-    std::vector<char*> argv(argc);
 
-    for (int i = 0; i < argc; ++i)
-    {
-        argv[i] = (char*)PyUnicode_AsUTF8(args_list[i].ptr());
-    }
 
    
     // Registering SIGSEGV handler
@@ -80,8 +73,6 @@ auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
 #endif
     signal(SIGINT, xpyt::sigkill_handler);
 
-    bool raw_mode = xpyt::extract_option("-r", "--raw", argc, argv.data());
-    std::string connection_filename = xpyt::extract_parameter("-f", argc, argv.data());
 
     using context_type = xeus::xcontext_impl<zmq::context_t>;
     using context_ptr = std::unique_ptr<context_type>;
@@ -90,13 +81,13 @@ auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
     // Instantiating the xeus xinterpreter
     using interpreter_ptr = std::unique_ptr<xeus::xinterpreter>;
     interpreter_ptr interpreter;
-    if (raw_mode)
+    if (raw_kernel)
     {
         interpreter = interpreter_ptr(new xpyqt_raw_interpreter());
     }
     else
     {
-        interpreter = interpreter_ptr(new xpyqt_interpreter());
+        interpreter = interpreter_ptr(new xpyqt_interpreter(redirect_output_enabled, redirect_display_enabled));
     }
 
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
@@ -121,7 +112,7 @@ auto kernel_factory(const py::list args_list) -> std::unique_ptr<xeus::xkernel>
 PYBIND11_MODULE(xqtpython, m)
 {
     py::class_<xeus::xkernel>(m, "xkernel")
-        .def(py::init(&kernel_factory))
+        .def(py::init(&kernel_factory), py::arg("redirect_output_enabled"), py::arg("redirect_display_enabled"), py::arg("raw_kernel"))
         .def("start", [](xeus::xkernel & kernel)->py::dict{
             kernel.start();
             auto config_dict = py::dict();

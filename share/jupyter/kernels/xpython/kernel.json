@@ -1,7 +1,7 @@
 {
-  "display_name": "Python 3.11 (XPython)",
+  "display_name": "Python 3.10 (XPython)",
   "argv": [
-      "/Users/thorstenbeier/micromamba/envs/xeus/bin/xpython",
+      "/Users/thorstenbeier/micromamba/envs/xeusqtpy/bin/xpython",
       "-f",
       "{connection_file}"
   ],

@@ -188,3 +188,16 @@ pybind11_add_module(xqtpython ${XEUS_QT_PYTHON_EXTENSION_SRC})
 xqtpy_set_common_options(xqtpython)
 xqtpy_set_kernel_options(xqtpython)
 xqtpy_target_link_libraries(xqtpython)
+
+
+execute_process(
+  COMMAND "${PYTHON_EXECUTABLE}" -c "if True:
+    from distutils import sysconfig as sc
+    print(sc.get_python_lib(prefix='', plat_specific=True))"
+  OUTPUT_VARIABLE PYTHON_SITE
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+install(TARGETS xqtpython
+  COMPONENT python
+  LIBRARY DESTINATION "${PYTHON_SITE}"
+  )

@@ -56,13 +56,14 @@ class KernelWidget(QWidget):
     A webview widget showing a jupyterlab instance
     """
 
-    def __init__(self, kernel_name, *args, **kwargs):
+    def __init__(self, kernel_name,jupyverse_dir, *args, **kwargs):
         super(KernelWidget, self).__init__(*args, **kwargs)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
         self.kernel_name = kernel_name
+        self.jupyverse_dir = jupyverse_dir
 
         # browser
         self.browser = QWebEngineView()
@@ -116,8 +117,10 @@ class KernelWidget(QWidget):
     def _start_jupyverse(self):
         #self.start_server_button.setDisabled(True)
         self.server_port = find_free_port()
+
+        # atm we still run a dev version of jupyverse
         args = ["hatch","run","dev.jupyterlab-noauth:jupyverse",f"--kernels.connection_path={str(self.kernel_file_dir.name)}", "--port",f"{self.server_port}"]
-        self.server_process = subprocess.Popen(args,cwd='/Users/thorstenbeier/src/jupyverse', shell=False)
+        self.server_process = subprocess.Popen(args,cwd=self.jupyverse_dir, shell=False)
 
         # we need to wait a tiny bit st the page is ready
         def setUrl():
@@ -134,11 +137,20 @@ class KernelWidget(QWidget):
 
 
 
-
 if __name__ == '__main__':
+    import argparse 
+
+    parser = argparse.ArgumentParser(
+        prog = 'kernel-demo',
+        description = 'show a kernel in qt application')
+    
+    parser.add_argument('jupyverse_dir')
+
+    args = parser.parse_args()
+
 
     app = QApplication(sys.argv)
-    kernel_widget = KernelWidget(kernel_name="qt-python")
+    kernel_widget = KernelWidget(kernel_name="qt-python", jupyverse_dir=args.jupyverse_dir)
 
     kernel_widget.show()
 

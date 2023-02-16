@@ -17,7 +17,6 @@
     get_kernel_widget().layout.addWidget(button)
 """
 
-
 import json
 import os 
 from pathlib import Path
@@ -42,14 +41,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 
 
-
-
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(('', 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
-
 
 class KernelWidget(QWidget):
     """
@@ -79,6 +75,7 @@ class KernelWidget(QWidget):
 
         self.server_process = None
         self._start_jupyverse() 
+        self._make_widget_accessible()
 
         # start this once the app is running
         QTimer.singleShot(0, self._start_kernel)
@@ -113,7 +110,6 @@ class KernelWidget(QWidget):
             json.dump(config, f)
 
 
-
     def _start_jupyverse(self):
         #self.start_server_button.setDisabled(True)
         self.server_port = find_free_port()
@@ -134,7 +130,6 @@ class KernelWidget(QWidget):
             self.server_process.terminate()
 
         event.accept()
-
 
 
 if __name__ == '__main__':

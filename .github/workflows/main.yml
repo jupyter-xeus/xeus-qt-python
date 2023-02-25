@@ -37,21 +37,6 @@ jobs:
         run: |
           $HOME/micromamba-bin/micromamba install cxx-compiler libuuid  -c conda-forge -y
 
-      - name: install xeus-qt
-        shell: bash -l {0}
-        run: |
-          git clone https://github.com/jupyter-xeus/xeus-qt 
-          cd xeus-qt
-          mkdir -p build
-          cd build
-          cmake .. \
-           -DXEUS_BUILD_TESTS=ON \
-           -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-           -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX 
-          make install
-          cd ..
-          cd ..
-
       - name: cmake configure
         shell: bash -l {0}
         run: |

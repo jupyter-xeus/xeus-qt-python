@@ -40,15 +40,6 @@ endif ()
 # Cf. https://github.com/pybind/pybind11/issues/2268
 find_package(PythonInterp ${PythonLibsNew_FIND_VERSION} REQUIRED)
 
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xpython/kernel.json.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xpython/kernel.json"
-)
-configure_file (
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xpython-raw/kernel.json.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xpython-raw/kernel.json"
-)
-
 # Build options
 # =============
 

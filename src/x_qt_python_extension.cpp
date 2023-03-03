@@ -10,6 +10,7 @@
 
 
 #include "pybind11/pybind11.h"
+#include "pybind11/embed.h"
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -30,7 +31,6 @@
 #include "xeus/xhelper.hpp"
 
 #include "xeus-python/xinterpreter.hpp"
-#include "xeus-python/xinterpreter_raw.hpp"
 #include "xeus-python/xdebugger.hpp"
 #include "xeus-python/xutils.hpp"
 
@@ -45,20 +45,92 @@ class  xpyqt_interpreter : public xpyt::interpreter
     {
         this->m_release_gil_at_startup = false;
     }
-};
 
-class  xpyqt_raw_interpreter : public xpyt::raw_interpreter
-{
-    public:
-        xpyqt_raw_interpreter()
-        : xpyt::raw_interpreter()
-    {
-        this->m_release_gil_at_startup = false;
+    void configure_impl() override{
+        xpyt::interpreter::configure_impl();
+        py::exec(R"pycode(
+
+def _install_event_loop_caller():
+    
+    from IPython import get_ipython
+
+    from qtpy import QtWidgets, QtCore
+    import ctypes
+    from contextlib import contextmanager
+
+
+    class _EventLoopCaller(QtCore.QThread):
+        DELAY = 100
+    
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._run = True
+            self.n_queued = 0
+            self.mutex = QtCore.QMutex()
+    
+        def run(self):
+        
+            self.setPriority(QtCore.QThread.LowestPriority)
+
+            cfunctype = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p)
+            function_ptr = cfunctype(self.run_event_loop)
+    
+            while self._run:
+                self.mutex.lock()
+                if True or self.n_queued <= 0:
+                    result = ctypes.pythonapi.Py_AddPendingCall(runEventLoopCFuncPtr, None)
+                    if result == 0:
+                        self.n_queued += 1
+                self.mutex.unlock()
+                QtCore.QThread.msleep(self.DELAY)
+    
+        def run_event_loop(self, c_ptr):
+            self.mutex.lock()
+            self.n_queued -= 1
+            QtWidgets.QApplication.instance().processEvents()
+            self.mutex.unlock()
+            return 0
+
+
+        @contextmanager
+        def with_event_loop():
+            loop = EventLoopCaller()
+            try:
+                loop.start()
+                yield
+            finally:
+                loop._run = False
+                loop.wait()
+                pass
+                
+
+    class _QtEventLoopWrapper(object):
+        def __init__(self):
+            self.thread = None
+        def pre_execute(self, *args, **kwargs):
+            self.thread = _EventLoopCaller()
+            self.thread.start()
+
+            
+        def post_execute(self, *args, **kwargs):
+            if self.thread is not None:
+                self.thread._run = False
+                self.thread.wait()
+    
+    ip = get_ipython()
+    event_loop_caller = _QtEventLoopWrapper()
+    ip.events.register("pre_execute",event_loop_caller.pre_execute)
+    ip.events.register("post_execute", event_loop_caller.post_execute)
+        
+_install_event_loop_caller()
+del _install_event_loop_caller
+        )pycode",py::globals());
     }
 };
 
 
-auto kernel_factory(bool redirect_output_enabled, bool redirect_display_enabled, bool raw_kernel) -> std::unique_ptr<xeus::xkernel>
+
+auto kernel_factory(bool redirect_output_enabled, bool redirect_display_enabled) -> std::unique_ptr<xeus::xkernel>
 {
 
 
@@ -80,15 +152,8 @@ auto kernel_factory(bool redirect_output_enabled, bool redirect_display_enabled,
 
     // Instantiating the xeus xinterpreter
     using interpreter_ptr = std::unique_ptr<xeus::xinterpreter>;
-    interpreter_ptr interpreter;
-    if (raw_kernel)
-    {
-        interpreter = interpreter_ptr(new xpyqt_raw_interpreter());
-    }
-    else
-    {
-        interpreter = interpreter_ptr(new xpyqt_interpreter(redirect_output_enabled, redirect_display_enabled));
-    }
+    interpreter_ptr interpreter(new xpyqt_interpreter(redirect_output_enabled, redirect_display_enabled));
+
 
     using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
     history_manager_ptr hist = xeus::make_in_memory_history_manager();
@@ -112,7 +177,7 @@ auto kernel_factory(bool redirect_output_enabled, bool redirect_display_enabled,
 PYBIND11_MODULE(xqtpython, m)
 {
     py::class_<xeus::xkernel>(m, "xkernel")
-        .def(py::init(&kernel_factory), py::arg("redirect_output_enabled"), py::arg("redirect_display_enabled"), py::arg("raw_kernel"))
+        .def(py::init(&kernel_factory), py::arg("redirect_output_enabled"), py::arg("redirect_display_enabled"))
         .def("start", [](xeus::xkernel & kernel)->py::dict{
             kernel.start();
             auto config_dict = py::dict();

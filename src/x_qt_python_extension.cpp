@@ -58,8 +58,9 @@ def _install_event_loop_caller():
     import ctypes
     from contextlib import contextmanager
 
+
     class _EventLoopCaller(QtCore.QThread):
-        SLEEP_INTERVAL_MS = 100
+        DELAY = 100
     
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -68,10 +69,11 @@ def _install_event_loop_caller():
             self.mutex = QtCore.QMutex()
     
         def run(self):
+        
             self.setPriority(QtCore.QThread.LowestPriority)
-    
-            RunEventLoopCType = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p)
-            runEventLoopCFuncPtr = RunEventLoopCType(self.run_event_loop)
+
+            cfunctype = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p)
+            function_ptr = cfunctype(self.run_event_loop)
     
             while self._run:
                 self.mutex.lock()
@@ -80,7 +82,7 @@ def _install_event_loop_caller():
                     if result == 0:
                         self.n_queued += 1
                 self.mutex.unlock()
-                QtCore.QThread.msleep(self.SLEEP_INTERVAL_MS)
+                QtCore.QThread.msleep(self.DELAY)
     
         def run_event_loop(self, c_ptr):
             self.mutex.lock()

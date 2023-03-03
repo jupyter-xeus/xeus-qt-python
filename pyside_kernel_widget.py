@@ -29,16 +29,16 @@ import socket
 from contextlib import closing
 from types import ModuleType
 
-import PyQt5
-from PyQt5.QtCore import QUrl, QTimer
-from PyQt5.QtWidgets import (
+import PySide2
+from PySide2.QtCore import QUrl, QTimer
+from PySide2.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QVBoxLayout,
     QPushButton,
     QWidget,
 )
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PySide2.QtWebEngineWidgets import QWebEngineView
 
 
 def find_free_port():
@@ -96,7 +96,8 @@ class KernelWidget(QWidget):
     def _start_kernel(self):
         print("start kernel")
         self.kernel = xqtpython.xkernel(
-            redirect_output_enabled=True, redirect_display_enabled=True
+            redirect_output_enabled=False,
+            redirect_display_enabled=True,
         )
 
         config = self.kernel.start()

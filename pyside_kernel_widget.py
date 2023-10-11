@@ -5,7 +5,7 @@
     - code to execute:
 
     from kernel_widget import get_kernel_widget
-    from PyQt5.QtWidgets import  QPushButton
+    from PySide2.QtWidgets import  QPushButton
     button = QPushButton()
     button.setText("black magic")
 

@@ -78,7 +78,7 @@ def _install_event_loop_caller():
             while self._run:
                 self.mutex.lock()
                 if True or self.n_queued <= 0:
-                    result = ctypes.pythonapi.Py_AddPendingCall(runEventLoopCFuncPtr, None)
+                    result = ctypes.pythonapi.Py_AddPendingCall(function_ptr, None)
                     if result == 0:
                         self.n_queued += 1
                 self.mutex.unlock()
